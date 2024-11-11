@@ -23,23 +23,9 @@ module.exports = NodeHelper.create({
 
   performArpScan () {
     return new Promise((resolve, reject) => {
-      exec("sudo arp-scan -q -l", (error, stdout) => {
+      exec("ping -c 5 -W 2 192.168.0.8", (error, stdout) => {
         if (error) {
           console.error(`MMM-PhoneDetect: Error performing ARP scan: ${error.message}`);
-          reject(error);
-        } else {
-          resolve(stdout);
-        }
-      });
-    });
-  },
-
-  performNmapScan () {
-    return new Promise((resolve, reject) => {
-      const networkRange = "192.168.1.0/24";
-      exec(`sudo nmap -sn ${networkRange}`, (error, stdout) => {
-        if (error) {
-          console.error(`MMM-PhoneDetect: Error performing nmap scan: ${error.message}`);
           reject(error);
         } else {
           resolve(stdout);
@@ -67,7 +53,6 @@ module.exports = NodeHelper.create({
 
           const anyDeviceOnline = combinedPhoneStatuses.some((status) => status.isOnline);
           if (anyDeviceOnline) {
-            this.turnMirrorOn();
             this.lastOnlineTime = Date.now();
           } else {
             this.checkAndTurnOffMirror();
@@ -80,49 +65,17 @@ module.exports = NodeHelper.create({
   },
 
   checkAndTurnOffMirror () {
-    if (Date.now() - this.lastOnlineTime >= this.config.nonResponsiveDuration && !this.isWithinIgnoreHours()) {
+    if (Date.now() - this.lastOnlineTime >= this.config.nonResponsiveDuration) {
       this.turnMirrorOff();
     }
   },
 
-  turnMirrorOn () {
-    if (!this.isWithinIgnoreHours()) {
-      console.log("MMM-PhoneDetect: Turning on the mirror...");
-      exec(this.config.turnOnCommand, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`MMM-PhoneDetect: Error turning on the mirror: ${error}`);
-        } else {
-          console.log("MMM-PhoneDetect: Mirror turned on.");
-        }
-      });
-    } else {
-      console.log("MMM-PhoneDetect: Ignoring turn on command due to ignore hours.");
-    }
-  },
-
   turnMirrorOff () {
-    if (!this.isWithinIgnoreHours()) {
       console.log("MMM-PhoneDetect: Turning off the mirror...");
-      exec(this.config.turnOffCommand, (error, stdout, stderr) => {
+      exec("sudo shutdown -h now", (error, stdout, stderr) => {
         if (error) {
           console.error(`MMM-PhoneDetect: Error turning off the mirror: ${error}`);
-        } else {
-          console.log("MMM-PhoneDetect: Mirror turned off.");
         }
       });
-    } else {
-      console.log("MMM-PhoneDetect: Ignoring turn off command due to ignore hours.");
-    }
   },
-
-  isWithinIgnoreHours () {
-    const currentHour = new Date().getHours();
-    const { startignoreHour, endignoreHour } = this.config;
-
-    if (startignoreHour < endignoreHour) {
-      return currentHour >= startignoreHour && currentHour < endignoreHour;
-    } else {
-      return currentHour >= startignoreHour || currentHour < endignoreHour;
-    }
-  }
 });
