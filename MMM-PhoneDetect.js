@@ -26,19 +26,20 @@ Module.register("MMM-PhoneDetect", {
 
   socketNotificationReceived (notification, payload) {
     if (notification === "PHONE_PRESENCE") {
-      payload.forEach((phone) => {
-        const dot = document.getElementById(`dot-${phone.mac}`);
+      console.log("i got the payload " + payload.mac);
+	const dot = document.getElementById(`dot-${payload.mac}`);
         if (dot) {
-          if (phone.isOnline) {
-            this.onlineDevices.add(phone.mac);
+          if (payload.isOnline) {
+            console.log("i got into online section");
+	    this.onlineDevices.add(payload.mac);
             dot.className = "phone-dot online";
           } else {
-            this.onlineDevices.delete(phone.mac);
+            console.log("i got into offline section");
+	    this.onlineDevices.delete(payload.mac);
             dot.className = "phone-dot offline";
           }
         }
-      });
-    }
+      };
   },
 
   getStyles () {
